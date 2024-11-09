@@ -1,0 +1,69 @@
+Square wave
+
+#include"18F4550ConfigSettings.h"
+#include<p18f4550.h>
+
+volatile bit timer_set = 0;
+
+void timerInit(void)
+{
+     // Timer0 configuration
+    T0CONbits.TMR0ON = 0; // Stop the timer
+    T0CONbits.T08BIT = 0; // Run in 16-bit mode
+    T0CONbits.T0CS = 0;   // Use system clock to increment timer
+    T0CONbits.PSA = 0;    // A prescaler is assigned for Timer0
+    T0CONbits.T0PS2 = 1;  // Use a 1:256 prescaler
+    T0CONbits.T0PS1 = 1;
+    T0CONbits.T0PS0 = 1;
+    TMR0H = 0xA4;
+    TMR0L = 0x6F;
+    T0CONbits.TMR0ON = 1; // Start the timer
+
+}
+
+void Interrupt_Init(void)
+{
+    RCONbits.IPEN = 1;
+    INTCONbits.GIEH = 1;
+    INTCONbits.GIEL = 1;
+
+    INTCONbits.TMR0IE = 1;
+    INTCONbits.TMR0IF = 0;
+    INTCON2bits.TMR0IP = 0;
+}
+
+void interrupt low_priority timerinterrupt(void)
+{
+    if(INTCONbits.TMR0IF == 1)
+    {
+      T0CONbits.TMR0ON = 0; // Stop the timer
+      INTCONbits.TMR0IF = 0;
+      TMR0H = 0xA4;
+      TMR0L = 0x6F;
+      timer_set = 1;
+      T0CONbits.TMR0ON = 1; // Start the timer
+    }
+}
+
+
+void main(void)
+{
+   TRISB = 0x00;
+   LATB = 0xFF;
+
+   Interrupt_Init();
+   timerInit();
+   
+   while(1)
+   {
+       if(timer_set )
+       {
+           LATB =~LATB;
+           timer_set = 0;
+       }
+   }
+
+
+}
+
+
